@@ -1,4 +1,4 @@
-package com.example.mvp_mvvm
+package com.example.mvp_mvvm.ui.login
 
 import android.app.Activity
 import android.graphics.Color
@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.annotation.MainThread
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
+import com.example.mvp_mvvm.app
 import com.example.mvp_mvvm.databinding.ActivityMainBinding
 
 
@@ -33,7 +34,7 @@ class MainActivity : AppCompatActivity(), LoginContract.View {
 
     private fun restorePresenter(): LoginPresenter {
         val presenter = lastCustomNonConfigurationInstance as? LoginPresenter
-        return presenter ?: LoginPresenter()
+        return presenter ?: LoginPresenter(app.loginUsecase)
     }
 
     override fun onRetainCustomNonConfigurationInstance(): Any? {
