@@ -1,4 +1,4 @@
-package com.example.mvp_mvvm.data
+package com.example.mvp_mvvm.data.api
 
 import com.example.mvp_mvvm.domain.LoginApi
 
