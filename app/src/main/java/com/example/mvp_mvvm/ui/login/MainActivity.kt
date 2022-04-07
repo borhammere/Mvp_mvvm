@@ -3,65 +3,92 @@ package com.example.mvp_mvvm.ui.login
 import android.app.Activity
 import android.graphics.Color
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
-import androidx.annotation.MainThread
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import com.example.mvp_mvvm.app
 import com.example.mvp_mvvm.databinding.ActivityMainBinding
 
 
-class MainActivity : AppCompatActivity(), LoginContract.View {
+class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
-    private var presenter: LoginContract.Presenter? = null
+    private var viewModel: LoginContract.ViewModel? = null
+    private val handler: Handler by lazy { Handler(Looper.getMainLooper()) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        presenter = restorePresenter()
-        presenter?.onAttach(this)
+        viewModel = restoreViewModel()
 
         binding.loginButton.setOnClickListener {
-            presenter?.onLogin(
+            viewModel?.onLogin(
                 binding.loginEditText.text.toString(),
                 binding.passwordEditText.text.toString()
             )
         }
+
+        viewModel?.shouldShowProgress?.subscribe(handler) { shouldShow ->
+            if (shouldShow == true) {
+                showProgress()
+            } else {
+                hideProgress()
+            }
+        }
+
+        viewModel?.isSuccess?.subscribe(handler) {
+            if (it == true) {
+                setSuccess()
+            }
+        }
+
+        viewModel?.errorText?.subscribe(handler) {
+            it?.let {
+                val success = viewModel?.isSuccess?.value
+                if (success == false) {
+                    setError(it)
+                }
+            }
+        }
     }
 
-    private fun restorePresenter(): LoginPresenter {
-        val presenter = lastCustomNonConfigurationInstance as? LoginPresenter
-        return presenter ?: LoginPresenter(app.loginUsecase)
+    override fun onDestroy() {
+        super.onDestroy()
+        viewModel?.isSuccess?.unsubscribeAll()
+        viewModel?.errorText?.unsubscribeAll()
+        viewModel?.shouldShowProgress?.unsubscribeAll()
+    }
+
+    private fun restoreViewModel(): LoginViewModel {
+        val viewModel = lastCustomNonConfigurationInstance as? LoginViewModel
+        return viewModel ?: LoginViewModel(app.loginUsecase)
     }
 
     override fun onRetainCustomNonConfigurationInstance(): Any? {
-        return presenter
+        return viewModel
     }
 
-    @MainThread
-    override fun setSuccess() {
+    private fun setSuccess() {
         binding.loginButton.isVisible = false
         binding.loginEditText.isVisible = false
         binding.passwordEditText.isVisible = false
         binding.root.setBackgroundColor(Color.GREEN)
     }
 
-    @MainThread
-    override fun setError(error: String) {
+    private fun setError(error: String) {
         Toast.makeText(this, "ERROR $error", Toast.LENGTH_SHORT).show()
     }
 
-    @MainThread
-    override fun showProgress() {
+    private fun showProgress() {
         binding.loginButton.isEnabled = false
         hideKeyboard(this)
     }
 
-    @MainThread
-    override fun hideProgress() {
+    private fun hideProgress() {
         binding.loginButton.isEnabled = true
     }
 
